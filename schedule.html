@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Harian Seru!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for fun buttons */
+        
+        .fun-button {
+            background-image: linear-gradient(to right, #6EE7B7, #34D399, #10B981);
+            transition: all 0.3s ease;
+        }
+        
+        .fun-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .edit-button {
+            background-image: linear-gradient(to right, #FCD34D, #FBBF24, #F59E0B);
+        }
+        
+        .delete-button {
+            background-image: linear-gradient(to right, #F87171, #EF4444, #DC2626);
+        }
+        /* Active filter button style */
+        
+        .chart-filters button.active {
+            background-image: linear-gradient(to right, #8B5CF6, #7C3AED, #6D28D9);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-4 flex flex-col items-center">
+
+    <h1 class="text-4xl font-extrabold text-gray-800 mb-6 text-center drop-shadow-md">Jadwal Harian AL! 🎉</h1>
+
+    <!-- Day Switcher -->
+    <div class="day-switcher bg-white p-4 rounded-2xl shadow-xl mb-6 flex justify-center items-center gap-4 w-full max-w-md">
+        <button onclick="prevDay()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+            ⬅️
+        </button>
+        <h2 id="currentDayDisplay" class="text-2xl font-semibold text-gray-700"></h2>
+        <button onclick="nextDay()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+            ➡️
+        </button>
+    </div>
+
+    <!-- Task Form -->
+    <form id="taskForm" class="bg-white p-6 rounded-2xl shadow-xl mb-6 w-full max-w-md flex flex-col gap-4">
+        <input type="text" id="activity" placeholder="Nama Aktivitas Seru!" required class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700" />
+        <div class="checkbox-group flex flex-wrap gap-x-4 gap-y-2 text-gray-700">
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Harian" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Harian</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Senin" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Senin</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Selasa" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Selasa</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Rabu" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Rabu</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Kamis" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Kamis</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Jumat" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Jumat</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Sabtu" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Sabtu</label>
+            <label class="flex items-center gap-1"><input type="checkbox" name="day" value="Minggu" class="form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400">Minggu</label>
+        </div>
+        <input type="time" id="time" required class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700" />
+        <button type="submit" class="fun-button text-white font-bold py-3 rounded-lg shadow-md">Tambah Aktivitas</button>
+    </form>
+
+    <!-- Task List -->
+    <ul id="taskList" class="w-full max-w-md"></ul>
+
+    <h2 class="text-3xl font-bold text-gray-800 mt-8 mb-4 text-center drop-shadow-md">Grafik Konsistensi <span id="chartPeriodDisplay">Mingguan</span> 📊</h2>
+
+    <!-- Chart Filters -->
+    <div class="chart-filters bg-white p-4 rounded-2xl shadow-xl mb-6 flex justify-center gap-3 w-full max-w-md">
+        <button id="filterWeek" onclick="setChartFilter('week')" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">Minggu Ini</button>
+        <button id="filterMonth" onclick="setChartFilter('month')" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">Bulan Ini</button>
+        <button id="filterYear" onclick="setChartFilter('year')" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">Tahun Ini</button>
+    </div>
+
+    <canvas id="consistencyChart" class="max-w-xl w-full h-auto bg-white p-4 rounded-2xl shadow-xl"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        let tasks = [];
+        // Error handling saat memuat dari localStorage
+        try {
+            tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        } catch (e) {
+            console.error("Gagal memuat tugas dari localStorage:", e);
+            // Jika data rusak, hapus dan mulai dari kosong
+            localStorage.removeItem('tasks');
+            tasks = [];
+        }
+
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        let currentDisplayDate = new Date(); // Objek Date untuk tanggal yang sedang ditampilkan
+        const today = new Date(); // Tanggal hari ini untuk perbandingan
+
+        let currentChartFilter = 'week'; // Default filter untuk chart
+
+        // Fungsi helper untuk format tanggal YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Fungsi helper untuk mendapatkan nama hari dari tanggal
+        function getDayName(date) {
+            return days[date.getDay()];
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+            const displayDayName = getDayName(currentDisplayDate);
+            const displayDateString = formatDate(currentDisplayDate);
+
+            document.getElementById('currentDayDisplay').textContent = `${displayDayName}, ${currentDisplayDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+            const isFutureOrToday = currentDisplayDate.setHours(0, 0, 0, 0) >= today.setHours(0, 0, 0, 0);
+
+            tasks.forEach((task, index) => {
+                const matchToday = task.days.includes('Harian') || task.days.includes(displayDayName);
+                if (!matchToday) return;
+
+                const li = document.createElement('li');
+                li.className = 'bg-gray-50 p-4 rounded-xl shadow-sm flex justify-between items-center mb-3 border border-gray-200';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-checkbox h-5 w-5 text-green-500 rounded focus:ring-green-400';
+                checkbox.checked = task.completions && task.completions[displayDateString];
+                checkbox.disabled = !isFutureOrToday;
+
+                checkbox.addEventListener('change', () => {
+                    if (!task.completions) {
+                        task.completions = {}; // Pastikan objek completions ada
+                    }
+                    if (checkbox.checked) {
+                        task.completions[displayDateString] = true;
+                    } else {
+                        delete task.completions[displayDateString]; // Hapus jika tidak dicentang
+                    }
+                    saveTasks();
+                    renderChart(); // Perbarui grafik setelah perubahan
+                });
+
+                const info = document.createElement('div');
+                info.className = 'task-info text-gray-800 text-lg ml-3';
+                const daysDisplay = task.days.includes('Harian') ? 'Setiap Hari' : task.days.join(', ');
+                info.textContent = `${task.time} - ${task.activity} (${daysDisplay})`;
+
+                const controls = document.createElement('div');
+                controls.className = 'task-controls flex gap-2';
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '✏️';
+                editBtn.className = 'edit-button text-white p-2 rounded-full shadow-sm transition duration-300 ease-in-out transform hover:scale-110 text-sm';
+                editBtn.onclick = () => {
+                    const newActivity = prompt('Edit Aktivitas:', task.activity);
+                    if (newActivity) {
+                        task.activity = newActivity;
+                        saveTasks();
+                        renderTasks();
+                    }
+                };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.className = 'delete-button text-white p-2 rounded-full shadow-sm transition duration-300 ease-in-out transform hover:scale-110 text-sm';
+                deleteBtn.onclick = () => {
+                    // Gunakan modal kustom sebagai pengganti alert/confirm
+                    showCustomModal('Apakah Anda yakin ingin menghapus aktivitas ini?', () => {
+                        tasks.splice(index, 1);
+                        saveTasks();
+                        renderTasks();
+                        renderChart();
+                    });
+                };
+
+                controls.append(editBtn, deleteBtn);
+                li.append(checkbox, info, controls);
+                list.appendChild(li);
+            });
+        }
+
+        document.getElementById('taskForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const activity = document.getElementById('activity').value;
+            const time = document.getElementById('time').value;
+            const dayCheckboxes = document.querySelectorAll('input[name="day"]:checked');
+            const selectedDays = Array.from(dayCheckboxes).map(cb => cb.value);
+
+            if (selectedDays.length === 0) {
+                // Gunakan modal kustom sebagai pengganti alert
+                showCustomModal('Pilih minimal satu hari.', null, true); // true untuk hanya tombol OK
+                return;
+            }
+
+            tasks.push({
+                activity,
+                days: selectedDays,
+                time,
+                completions: {}
+            }); // Inisialisasi completions
+            saveTasks();
+            renderTasks();
+            renderChart();
+            e.target.reset();
+        });
+
+        function prevDay() {
+            currentDisplayDate.setDate(currentDisplayDate.getDate() - 1);
+            renderTasks();
+        }
+
+        function nextDay() {
+            currentDisplayDate.setDate(currentDisplayDate.getDate() + 1);
+            renderTasks();
+        }
+
+        const ctx = document.getElementById('consistencyChart').getContext('2d');
+        let chart = null; // Deklarasikan chart di luar agar bisa diakses di renderChart
+
+        // Fungsi untuk mengatur filter grafik (mingguan, bulanan, tahunan)
+        function setChartFilter(filter) {
+            currentChartFilter = filter;
+            // Hapus kelas 'active' dari semua tombol filter
+            document.querySelectorAll('.chart-filters button').forEach(button => {
+                button.classList.remove('active');
+            });
+            // Tambahkan kelas 'active' ke tombol yang baru saja diklik
+            document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+
+            // Perbarui tampilan judul grafik
+            const chartPeriodDisplay = document.getElementById('chartPeriodDisplay');
+            switch (filter) {
+                case 'week':
+                    chartPeriodDisplay.textContent = 'Mingguan';
+                    break;
+                case 'month':
+                    chartPeriodDisplay.textContent = 'Bulanan';
+                    break;
+                case 'year':
+                    chartPeriodDisplay.textContent = 'Tahunan';
+                    break;
+            }
+            renderChart();
+        }
+
+        function renderChart() {
+            let labels = [];
+            let data = [];
+            let startDate, endDate;
+
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); // Reset waktu untuk perbandingan tanggal saja
+
+            // Tentukan rentang tanggal berdasarkan filter
+            if (currentChartFilter === 'week') {
+                labels = days.slice(1).concat(days.slice(0, 1)); // Senin-Minggu
+                const firstDayOfWeek = new Date(now);
+                firstDayOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1)); // Senin minggu ini (Minggu adalah 0, Senin adalah 1)
+                startDate = new Date(firstDayOfWeek);
+                endDate = new Date(firstDayOfWeek);
+                endDate.setDate(firstDayOfWeek.getDate() + 6); // Minggu minggu ini
+            } else if (currentChartFilter === 'month') {
+                labels = [];
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Hari terakhir bulan ini
+                let currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    labels.push(String(currentDate.getDate())); // Hanya tanggal
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            } else if (currentChartFilter === 'year') {
+                labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31);
+            }
+
+            // Inisialisasi data dengan nol
+            if (currentChartFilter === 'week') {
+                data = new Array(7).fill(0);
+            } else if (currentChartFilter === 'month') {
+                data = new Array(labels.length).fill(0);
+            } else if (currentChartFilter === 'year') {
+                data = new Array(12).fill(0);
+            }
+
+            // Hitung aktivitas yang selesai
+            tasks.forEach(task => {
+                for (const dateString in task.completions) {
+                    if (task.completions[dateString]) { // Pastikan statusnya true
+                        const completedDate = new Date(dateString);
+                        completedDate.setHours(0, 0, 0, 0);
+
+                        // Pastikan tanggal selesai berada dalam rentang filter yang dipilih
+                        if (completedDate >= startDate && completedDate <= endDate) {
+                            const dayOfWeek = getDayName(completedDate);
+                            const dayOfMonth = completedDate.getDate();
+                            const monthOfYear = completedDate.getMonth(); // 0-11
+
+                            if (task.days.includes('Harian') || task.days.includes(dayOfWeek)) {
+                                if (currentChartFilter === 'week') {
+                                    // Map Minggu ke indeks 6, Senin ke 0, dst.
+                                    let dayIndex = completedDate.getDay();
+                                    dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1; // Ubah Minggu (0) ke 6, Senin (1) ke 0, dst.
+                                    data[dayIndex]++;
+                                } else if (currentChartFilter === 'month') {
+                                    data[dayOfMonth - 1]++; // dayOfMonth adalah 1-31
+                                } else if (currentChartFilter === 'year') {
+                                    data[monthOfYear]++;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (chart) {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                // Sesuaikan skala Y berdasarkan data, agar tidak terlalu kosong
+                chart.options.scales.y.suggestedMax = Math.max(5, Math.max(...data) + 1);
+                chart.update();
+            } else {
+                chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Jumlah Aktivitas Selesai',
+                            data: data,
+                            backgroundColor: '#6EE7B7', // Tailwind green-300
+                            borderColor: '#34D399', // Tailwind green-400
+                            borderWidth: 1,
+                            borderRadius: 8, // Rounded bars
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false // Hide legend if only one dataset
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: Math.max(5, Math.max(...data) + 1), // Sesuaikan max y-axis
+                                ticks: {
+                                    precision: 0 // Ensure whole numbers on y-axis
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)' // Light grid lines
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false // Hide x-axis grid lines
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- Custom Modal Implementation (Pengganti alert/confirm) ---
+        function showCustomModal(message, onConfirm = null, isAlert = false) {
+            // Hapus modal yang ada jika ada
+            const existingModal = document.getElementById('customModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modalHtml = `
+                <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+                        <p class="text-lg font-semibold text-gray-800 mb-4">${message}</p>
+                        <div class="flex justify-center gap-4">
+                            ${!isAlert ? `<button id="cancelModalBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">Batal</button>` : ''}
+                            <button id="confirmModalBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            const modal = document.getElementById('customModal');
+            const confirmBtn = document.getElementById('confirmModalBtn');
+            const cancelBtn = document.getElementById('cancelModalBtn');
+
+            confirmBtn.onclick = () => {
+                if (onConfirm) {
+                    onConfirm();
+                }
+                modal.remove();
+            };
+
+            if (cancelBtn) {
+                cancelBtn.onclick = () => {
+                    modal.remove();
+                };
+            }
+        }
+        // --- Akhir Implementasi Custom Modal ---
+
+        // Panggil saat inisialisasi dan atur filter awal ke 'week'
+        renderTasks();
+        setChartFilter('week'); // Panggil ini untuk mengatur tampilan awal chart
+    </script>
+</body>
+
+</html>
